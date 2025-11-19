@@ -1,4 +1,4 @@
-# extend-event-handler-am-consumer
+# extend-event-handler-with-am-consumer
 
 ```mermaid
 flowchart LR
