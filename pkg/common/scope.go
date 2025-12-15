@@ -6,8 +6,9 @@ package common
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 
-	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -33,7 +34,7 @@ func ChildScopeFromRemoteScope(ctx context.Context, name string) *Scope {
 		Ctx:     tracerCtx,
 		TraceID: traceID,
 		span:    span,
-		Log:     log.WithField(traceIdLogField, traceID),
+		Log:     slog.Default().With(slog.String(traceIdLogField, traceID)),
 	}
 }
 
@@ -42,12 +43,12 @@ type Scope struct {
 	Ctx     context.Context
 	TraceID string
 	span    oteltrace.Span
-	Log     *log.Entry
+	Log     *slog.Logger
 }
 
 // SetLogger allows for setting a different logger than the default std logger. This is mostly useful for testing.
-func (s *Scope) SetLogger(logger *log.Entry) {
-	s.Log = log.WithField(traceIdLogField, s.TraceID)
+func (s *Scope) SetLogger(logger *slog.Logger) {
+	s.Log = logger.With(slog.String(traceIdLogField, s.TraceID))
 }
 
 // Finish finishes current scope
@@ -100,7 +101,7 @@ func (s *Scope) SetAttributes(key string, value interface{}) {
 	case []float64:
 		s.span.SetAttributes(attribute.Float64Slice(key, v))
 	default:
-		s.Log.Errorf("could not set a span attribute of type %T", value)
+		s.Log.Error("could not set a span attribute", "type", fmt.Sprintf("%T", value))
 	}
 }
 
