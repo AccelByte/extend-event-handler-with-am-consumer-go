@@ -6,8 +6,8 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "extend-async-messaging/pkg/pb/async_messaging"
@@ -22,7 +22,7 @@ func NewAsyncMessagingHandler() *AsyncMessagingHandler {
 }
 
 func (h *AsyncMessagingHandler) OnMessage(ctx context.Context, msg *pb.ReceivedMessage) (*emptypb.Empty, error) {
-	logrus.Infof("received message from topic: %s, body: %s", msg.Topic, msg.Body)
+	slog.Default().Info("received message", "topic", msg.Topic, "body", msg.Body)
 
 	return &emptypb.Empty{}, nil
 }
