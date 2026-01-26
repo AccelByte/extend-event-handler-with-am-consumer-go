@@ -1,4 +1,4 @@
-// Copyright (c) 2025 AccelByte Inc. All Rights Reserved.
+// Copyright (c) 2025-2026 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -33,6 +33,12 @@ import (
 
 	pb "extend-async-messaging/pkg/pb/async_messaging"
 
+	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/factory"
+	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/repository"
+	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/service/cloudsave"
+
+	abIam "github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/service/iam"
+	sdkAuth "github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/utils/auth"
 	prometheusGrpc "github.com/grpc-ecosystem/go-grpc-prometheus"
 	prometheusCollectors "github.com/prometheus/client_golang/prometheus/collectors"
 )
@@ -104,6 +110,11 @@ func main() {
 		logging.StreamServerInterceptor(common.InterceptorLogger(logger), loggingOptions...),
 	}
 
+	// Preparing the IAM authorization
+	var tokenRepo repository.TokenRepository = sdkAuth.DefaultTokenRepositoryImpl()
+	var configRepo repository.ConfigRepository = sdkAuth.DefaultConfigRepositoryImpl()
+	var refreshRepo repository.RefreshTokenRepository = &sdkAuth.RefreshTokenImpl{AutoRefresh: true, RefreshRate: 0.8}
+
 	// Create gRPC Server
 	s := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
@@ -111,8 +122,32 @@ func main() {
 		grpc.ChainStreamInterceptor(streamServerInterceptors...),
 	)
 
+	// Configure IAM authorization
+	oauthService := abIam.OAuth20Service{
+		Client:                 factory.NewIamClient(configRepo),
+		ConfigRepository:       configRepo,
+		TokenRepository:        tokenRepo,
+		RefreshTokenRepository: refreshRepo,
+	}
+	clientId := configRepo.GetClientId()
+	clientSecret := configRepo.GetClientSecret()
+	err := oauthService.LoginClient(&clientId, &clientSecret)
+	if err != nil {
+		logger.Error("Error unable to login using clientId and clientSecret", "error", err)
+		os.Exit(1)
+	}
+
+	namespace := common.GetEnv("AB_NAMESPACE", "accelbyte")
+	storeEnabled := strings.ToLower(common.GetEnv("STORE_MESSAGE_IN_CLOUDSAVE", "false")) == "true"
+
+	// Initialize the AccelByte CloudSave service
+	adminGameRecordService := cloudsave.AdminGameRecordService{
+		Client:          factory.NewCloudsaveClient(configRepo),
+		TokenRepository: tokenRepo,
+	}
+
 	// Register Async Messaging Handler
-	asyncHandler := service.NewAsyncMessagingHandler()
+	asyncHandler := service.NewAsyncMessagingHandler(&adminGameRecordService, namespace, storeEnabled)
 	pb.RegisterAsyncMessagingConsumerServiceServer(s, asyncHandler)
 
 	// Enable gRPC Reflection

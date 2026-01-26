@@ -20,7 +20,7 @@ custom game events.
 ## Overview
 
 This repository provides a project template for an `Extend Async Messaging` 
-app written in `Go`. It includes sample implementations for consuming custom game events using the managed message queue infrastructure. 
+app written in `Go`. It includes sample implementations for consuming custom game events using the managed message queue infrastructure and optionally store received message in CloudSave. 
 Additionally, it comes with built-in instrumentation for observability, ensuring 
 that metrics, traces, and logs are available upon deployment.
 
@@ -145,9 +145,14 @@ to implement your custom game logic for message processing.
    b. [Create a Game Namespace](https://docs.accelbyte.io/gaming-services/services/access/reference/namespaces/manage-your-namespaces/) if you don't have one yet. Keep the `Namespace ID`.
 
 
-   c. [Create an OAuth Client](https://docs.accelbyte.io/gaming-services/services/access/authorization/manage-access-control-for-applications/#create-an-iam-client) with confidential client type. Keep the `Client ID` and `Client Secret`.
+   c. [Create an OAuth Client](https://docs.accelbyte.io/gaming-services/services/access/authorization/manage-access-control-for-applications/#create-an-iam-client) with confidential client type with the following permissions. Keep the `Client ID` and `Client Secret`.
+
+      - For AGS Private Cloud customers:
+         - `ADMIN:NAMESPACE:{namespace}:CLOUDSAVE:RECORD [CREATE,READ,UPDATE,DELETE]` to create, read, update, and delete cloudsave records
+      - For AGS Shared Cloud customers:
+         - Cloud Save -> Game Records (Create, Read, Update, Delete)
    
-   > :info: Basic client credentials are sufficient for this template. Specific permissions may be required based on your custom implementation.
+   > :info: Basic client credentials are sufficient for this template. Cloudsave permission is required only if `STORE_MESSAGE_IN_CLOUDSAVE` is set to true. Also Specific permissions may be required based on your custom implementation.
 
 ## Setup
 
@@ -169,7 +174,10 @@ To be able to run this app, you will need to follow these setup steps.
    AB_CLIENT_ID='xxxxxxxxxx'                  # Use Client ID from the Prerequisites section
    AB_CLIENT_SECRET='xxxxxxxxxx'              # Use Client Secret from the Prerequisites section
    AB_NAMESPACE='xxxxxxxxxx'                  # Use Namespace ID from the Prerequisites section
+   STORE_MESSAGE_IN_CLOUDSAVE=false           # Set to true to enable storing messages in CloudSave
    ```
+
+   > :info: If `STORE_MESSAGE_IN_CLOUDSAVE` is set to true, cloudsave permission for game records is required.
 
 ## Building
 
