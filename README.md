@@ -142,10 +142,10 @@ to implement your custom game logic for message processing.
       - Sample URL for AGS Shared Cloud customers: `https://spaceshooter.prod.gamingservices.accelbyte.io`
       - Sample URL for AGS Private Cloud customers:  `https://dev.accelbyte.io`
 
-   b. [Create a Game Namespace](https://docs.accelbyte.io/gaming-services/services/access/reference/namespaces/manage-your-namespaces/) if you don't have one yet. Keep the `Namespace ID`.
+   b. [Create a Game Namespace](https://docs.accelbyte.io/gaming-services/modules/foundations/identity-access/namespaces/manage-your-namespaces/) if you don't have one yet. Keep the `Namespace ID`.
 
 
-   c. [Create an OAuth Client](https://docs.accelbyte.io/gaming-services/services/access/authorization/manage-access-control-for-applications/#create-an-iam-client) with confidential client type with the following permissions. Keep the `Client ID` and `Client Secret`.
+   c. [Create an OAuth Client](https://docs.accelbyte.io/gaming-services/modules/foundations/identity-access/authorization/manage-access-control-for-applications/#create-an-iam-client) with confidential client type with the following permissions. Keep the `Client ID` and `Client Secret`.
 
       - For AGS Private Cloud customers:
          - `ADMIN:NAMESPACE:{namespace}:CLOUDSAVE:RECORD [CREATE,READ,UPDATE,DELETE]` to create, read, update, and delete cloudsave records
@@ -310,5 +310,5 @@ After completing testing, the next step is to deploy your app to `AccelByte Gami
 
 Proceed by modifying this `Extend Async Messaging` app template to implement your own custom logic for consuming messages.
 
-For more details about Extend apps, see the [Extend documentation](https://docs.accelbyte.io/gaming-services/services/extend/).
+For more details about Extend apps, see the [Extend documentation](https://docs.accelbyte.io/gaming-services/modules/foundations/extend/).
 
