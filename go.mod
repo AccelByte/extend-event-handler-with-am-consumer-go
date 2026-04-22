@@ -3,7 +3,7 @@ module extend-async-messaging
 go 1.24.0
 
 require (
-	github.com/AccelByte/accelbyte-go-sdk v0.86.0
+	github.com/AccelByte/accelbyte-go-sdk v0.87.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/prometheus/client_golang v1.23.2
