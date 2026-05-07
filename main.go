@@ -122,16 +122,48 @@ func main() {
 		grpc.ChainStreamInterceptor(streamServerInterceptors...),
 	)
 
+	// Save Tracer Provider
+	if val := common.GetEnv("OTEL_SERVICE_NAME", ""); val != "" {
+		serviceName = "extend-app-eh-consumer-" + strings.ToLower(val)
+	}
+	tracerProvider, err := common.NewTracerProvider(serviceName, environment, id)
+	if err != nil {
+		logger.Error("failed to create tracer provider", "error", err)
+		os.Exit(1)
+	}
+	otel.SetTracerProvider(tracerProvider)
+	defer func(ctx context.Context) {
+		if err := tracerProvider.Shutdown(ctx); err != nil {
+			logger.Error("failed to shutdown tracer provider", "error", err)
+			os.Exit(1)
+		}
+	}(ctx)
+	logger.Info("set tracer provider", "name", serviceName, "environment", environment, "id", id)
+
+	// Save Text Map Propagator
+	otel.SetTextMapPropagator(
+		propagation.NewCompositeTextMapPropagator(
+			b3.New(),
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		),
+	)
+
+	// Set tracing HTTP transport globally so all outgoing HTTP calls are traced
+	http.DefaultTransport = common.NewTracingRoundTripper()
+	logger.Info("set text map propagator")
+
 	// Configure IAM authorization
 	oauthService := abIam.OAuth20Service{
 		Client:                 factory.NewIamClient(configRepo),
 		ConfigRepository:       configRepo,
+
 		TokenRepository:        tokenRepo,
 		RefreshTokenRepository: refreshRepo,
 	}
 	clientId := configRepo.GetClientId()
 	clientSecret := configRepo.GetClientSecret()
-	err := oauthService.LoginClient(&clientId, &clientSecret)
+	err = oauthService.LoginClient(&clientId, &clientSecret)
 	if err != nil {
 		logger.Error("Error unable to login using clientId and clientSecret", "error", err)
 		os.Exit(1)
@@ -172,34 +204,6 @@ func main() {
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", metricsPort), nil))
 	}()
 	logger.Info("serving prometheus metrics", "port", metricsPort, "endpoint", metricsEndpoint)
-
-	// Save Tracer Provider
-	if val := common.GetEnv("OTEL_SERVICE_NAME", ""); val != "" {
-		serviceName = "extend-app-eh-consumer-" + strings.ToLower(val)
-	}
-	tracerProvider, err := common.NewTracerProvider(serviceName, environment, id)
-	if err != nil {
-		logger.Error("failed to create tracer provider", "error", err)
-		os.Exit(1)
-	}
-	otel.SetTracerProvider(tracerProvider)
-	defer func(ctx context.Context) {
-		if err := tracerProvider.Shutdown(ctx); err != nil {
-			logger.Error("failed to shutdown tracer provider", "error", err)
-			os.Exit(1)
-		}
-	}(ctx)
-	logger.Info("set tracer provider", "name", serviceName, "environment", environment, "id", id)
-
-	// Save Text Map Propagator
-	otel.SetTextMapPropagator(
-		propagation.NewCompositeTextMapPropagator(
-			b3.New(),
-			propagation.TraceContext{},
-			propagation.Baggage{},
-		),
-	)
-	logger.Info("set text map propagator")
 
 	// Start gRPC Server
 	logger.Info("starting gRPC server..")
